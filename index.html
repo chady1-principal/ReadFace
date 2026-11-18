@@ -448,9 +448,12 @@
                         if (response.ok) break;
                         // 키 문제는 재시도해도 풀리지 않으므로 바로 안내한다.
                         if (response.status === 400 || response.status === 401 || response.status === 403) {
-                            throw new Error('Gemini API 키가 올바르지 않거나 사용할 수 없습니다. 위의 🔑 Gemini API 키 설정에서 키를 다시 확인해 주세요.');
+                            const keyErr = new Error('Gemini API 키가 올바르지 않거나 사용할 수 없습니다. 위의 🔑 Gemini API 키 설정에서 키를 다시 확인해 주세요.');
+                            keyErr.code = 'KEY_INVALID';
+                            throw keyErr;
                         }
                     } catch (err) {
+                        if (err && err.code === 'KEY_INVALID') throw err;
                         // Network error, retry
                     }
                     attempt++;
@@ -479,8 +482,14 @@
                 }
 
             } catch (err) {
-                errorBox.innerText = "오류가 발생했습니다: " + err.message;
-                errorBox.classList.remove('hidden');
+                if (err && err.code === 'KEY_INVALID') {
+                    errorBox.innerText = err.message;
+                    errorBox.classList.remove('hidden');
+                    openKeyPanel('Gemini API 키가 올바르지 않거나 사용할 수 없습니다. 키를 다시 확인해 주세요.');
+                } else {
+                    errorBox.innerText = "오류가 발생했습니다: " + err.message;
+                    errorBox.classList.remove('hidden');
+                }
             } finally {
                 loadingState.classList.remove('flex');
                 loadingState.classList.add('hidden');
